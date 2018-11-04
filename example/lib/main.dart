@@ -32,6 +32,12 @@ class _MyAppState extends State<MyApp> {
               },
             ),
             new RaisedButton(
+              child: Text('获取权限'),
+              onPressed: () async {
+                await SyFlutterAmap().requestPermission();
+              },
+            ),
+            new RaisedButton(
               child: Text('获取位置'),
               onPressed: () async {
                 SyLocation loc = await SyFlutterAmap().getLocation();

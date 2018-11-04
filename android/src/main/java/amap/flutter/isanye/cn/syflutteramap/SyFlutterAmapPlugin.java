@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
@@ -13,6 +12,7 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import android.support.v4.app.ActivityCompat;
 
@@ -20,6 +20,7 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 
+import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -27,11 +28,15 @@ import java.util.List;
 import java.util.Locale;
 
 /** SyFlutterAmapPlugin */
-public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnRequestPermissionsResultCallback {
+public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.RequestPermissionsResultListener {
 
+  private Result result;
   private final Activity activity;
-  private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+  private final Context context;
+  private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 0;
   private AMapLocationClient locationClient;
+
+  private static String TAG = "Amap";
 
   /**
    * 需要进行检测的权限数组
@@ -44,34 +49,42 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
           Manifest.permission.READ_PHONE_STATE
   };
 
-  private SyFlutterAmapPlugin(Activity activity){
-    this.activity = activity;
-    this.locationClient = new AMapLocationClient(activity);
+  private SyFlutterAmapPlugin(Registrar registrar){
+    this.activity = registrar.activity();
+    this.context = registrar.context();
+    this.locationClient = new AMapLocationClient(context);
     //AMapLocationClient.setApiKey("");
   }
 
   /** Plugin registration. */
   public static void registerWith(Registrar registrar) {
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), "cn.isanye.sy_flutter_amap");
-    channel.setMethodCallHandler(new SyFlutterAmapPlugin(registrar.activity()));
+    MethodChannel channel = new MethodChannel(registrar.messenger(), "cn.isanye.sy_flutter_amap");
+    SyFlutterAmapPlugin amapPlugin = new SyFlutterAmapPlugin(registrar);
+    channel.setMethodCallHandler(amapPlugin);
+    registrar.addRequestPermissionsResultListener(amapPlugin);//重要!!!，缺少这行会导致 onRequestPermissionsResult 回调失败
   }
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
+
     switch (call.method) {
       /*case "constructor":
         final String apiKey = call.argument("apiKey");
         AMapLocationClient.setApiKey(apiKey);
         break;*/
       case "hasPermission":
-        String res = this.hasPermission() ? "true" : "false";
+        boolean res = this.hasPermission();
         result.success(res);
+        break;
+      case "requestPermission":
+        this.result = result;
+        this.requestPermissions();
         break;
       case "getLocation":
         this.getLocation(result);
         break;
       case "signSha1":
-        result.success(signSha1(activity));
+        result.success(signSha1(context));
         break;
       default:
         result.notImplemented();
@@ -80,13 +93,18 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
   }
 
   private boolean hasPermission(){
-    Log.e("amap","hasPermission");
     List<String> needRequestPermissionList = _findDeniedPermissions(needPermissions);
     return null == needRequestPermissionList || needRequestPermissionList.size() <= 0;
   }
 
   private void requestPermissions() {
     List<String> needRequestPermissionList = _findDeniedPermissions(needPermissions);
+    if(needRequestPermissionList.size() <= 0){
+      Result result = this.result;
+      this.result = null;
+      result.success(true);
+      return;
+    }
     ActivityCompat.requestPermissions(
             activity,
             needRequestPermissionList.toArray(new String[needRequestPermissionList.size()]),
@@ -96,21 +114,14 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
 
   private void getLocation(Result result){
     if(!this.hasPermission()){
-      this.requestPermissions();
+      result.error("NOT_HAVE_PERMISSION","not have permission,please call requestPermission first",null);
       return;
     }
-    Log.e("amap","getLocation");
     AMapLocationClientOption option = new AMapLocationClientOption();
-    //设置定位场景，目前支持三种场景（签到、出行、运动，默认无场景）
     option.setLocationPurpose(AMapLocationClientOption.AMapLocationPurpose.SignIn);
     option.setLocationMode(AMapLocationClientOption.AMapLocationMode.Battery_Saving);
-    //获取一次定位结果：
-    //该方法默认为false。
     option.setOnceLocation(true);
-    //获取最近3s内精度最高的一次定位结果：
-    //设置setOnceLocationLatest(boolean b)接口为true，启动定位时SDK会返回最近3s内精度最高的一次定位结果。如果设置其为true，setOnceLocation(boolean b)接口也会被设置为true，反之不会，默认为false。
     option.setOnceLocationLatest(true);
-    //设置是否返回地址信息（默认返回地址信息）
     option.setNeedAddress(true);
 
     if(locationClient != null){
@@ -122,13 +133,13 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
       if(location != null){
         if(location.getErrorCode() == 0){
           result.success(location.toStr());
-          Log.e("amap",location.toStr());
+          Log.e(TAG,location.toStr());
         }else{
           result.error(Integer.toString(location.getErrorCode()),location.getErrorInfo(),null);
           Log.e("amap err",location.getErrorInfo());
         }
       }else {
-        result.error("LOCATION_IS_NULL","location_is_null",null);
+        result.error("LOCATION_IS_NULL","请检查网络连接及GPS是否开启",null);
       }
       locationClient.stopLocation();
     }else{
@@ -136,12 +147,7 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
     }
   }
 
-  @Override
-  public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-    if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-      Log.e("amap","onRequestPermissionsResult");
-    }
-  }
+
 
   //打包签名的sha1，设置高徳key的时候需要用
   private static String signSha1(Context context) {
@@ -176,7 +182,7 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
   private List<String> _findDeniedPermissions(String[] permissions) {
     List<String> needRequestPermissionList = new ArrayList<>();
     for (String perm : permissions) {
-      if (ContextCompat.checkSelfPermission(activity,
+      if (ContextCompat.checkSelfPermission(context,
               perm) != PackageManager.PERMISSION_GRANTED
               || ActivityCompat.shouldShowRequestPermissionRationale(
               activity, perm)) {
@@ -184,5 +190,22 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,ActivityCompat.OnR
       }
     }
     return needRequestPermissionList;
+  }
+
+  @Override
+  public boolean onRequestPermissionsResult(int i, String[] strings, int[] ints) {
+    Result result = this.result;
+    this.result = null;
+    if(result == null){
+      return true;
+    }
+    if (i == REQUEST_PERMISSIONS_REQUEST_CODE) {
+      if(this.hasPermission()){
+        result.success(true);
+      }else{
+        result.success(false);
+      }
+    }
+    return true;
   }
 }
