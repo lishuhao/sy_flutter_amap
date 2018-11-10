@@ -39,10 +39,6 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
-        manifestPlaceholders=[
-                AMAP_KEY:"d218096dc7b73b88f969ffc53bb1c003"
-        ]
     }
 
     buildTypes {

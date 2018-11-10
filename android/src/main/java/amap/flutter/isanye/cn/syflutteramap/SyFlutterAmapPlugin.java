@@ -53,7 +53,6 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.Req
     this.activity = registrar.activity();
     this.context = registrar.context();
     this.locationClient = new AMapLocationClient(context);
-    //AMapLocationClient.setApiKey("");
   }
 
   /** Plugin registration. */
@@ -66,12 +65,7 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.Req
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
-
     switch (call.method) {
-      /*case "constructor":
-        final String apiKey = call.argument("apiKey");
-        AMapLocationClient.setApiKey(apiKey);
-        break;*/
       case "hasPermission":
         boolean res = this.hasPermission();
         result.success(res);
@@ -80,8 +74,8 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.Req
         this.result = result;
         this.requestPermissions();
         break;
-      case "getLocation":
-        this.getLocation(result);
+      case "getLastKnownLocation":
+        this.getLastKnownLocation(call,result);
         break;
       case "signSha1":
         result.success(signSha1(context));
@@ -112,11 +106,14 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.Req
     );
   }
 
-  private void getLocation(Result result){
+  private void getLastKnownLocation(MethodCall call,Result result){
     if(!this.hasPermission()){
       result.error("NOT_HAVE_PERMISSION","not have permission,please call requestPermission first",null);
       return;
     }
+    String androidApiKey = call.argument("androidApiKey");
+    AMapLocationClient.setApiKey(androidApiKey);
+
     AMapLocationClientOption option = new AMapLocationClientOption();
     option.setLocationPurpose(AMapLocationClientOption.AMapLocationPurpose.SignIn);
     option.setLocationMode(AMapLocationClientOption.AMapLocationMode.Battery_Saving);
@@ -133,7 +130,6 @@ public class SyFlutterAmapPlugin implements MethodCallHandler,PluginRegistry.Req
       if(location != null){
         if(location.getErrorCode() == 0){
           result.success(location.toStr());
-          Log.e(TAG,location.toStr());
         }else{
           result.error(Integer.toString(location.getErrorCode()),location.getErrorInfo(),null);
           Log.e("amap err",location.getErrorInfo());

@@ -3,6 +3,9 @@ import 'package:sy_flutter_amap/sy_flutter_amap.dart';
 
 void main() => runApp(new MyApp());
 
+const iosApiKey = '9e198f3cb0a17cc708020347e8c156ad';
+const androidApiKey = 'd218096dc7b73b88f969ffc53bb1c003';
+
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => new _MyAppState();
@@ -28,19 +31,20 @@ class _MyAppState extends State<MyApp> {
             new RaisedButton(
               child: Text('检查权限'),
               onPressed: () async {
-                await SyFlutterAmap().hasPermission();
+                await SyFlutterAmap.hasPermission();
               },
             ),
             new RaisedButton(
               child: Text('获取权限'),
               onPressed: () async {
-                await SyFlutterAmap().requestPermission();
+                await SyFlutterAmap.requestPermission();
               },
             ),
             new RaisedButton(
               child: Text('获取位置'),
               onPressed: () async {
-                SyLocation loc = await SyFlutterAmap().getLocation();
+                SyLocation loc = await SyFlutterAmap.getLastKnownLocation(
+                    iosApiKey: iosApiKey, androidApiKey: androidApiKey);
                 if (loc != null) {
                   print(loc.toJon());
                 }
@@ -49,7 +53,7 @@ class _MyAppState extends State<MyApp> {
             new RaisedButton(
               child: Text('获取签名'),
               onPressed: () async {
-                String s = await SyFlutterAmap().signSha1();
+                String s = await SyFlutterAmap.signSha1();
                 print(s);
               },
             ),
