@@ -21,7 +21,7 @@
 ```
 
 ## 其它Flutter 插件
-- [Flutter组件库](https://github.com/lishuhao/sy_flutter_widgets)
 - [支付宝](https://github.com/lishuhao/sy_flutter_alipay)
-- [阿里云移动推送](https://github.com/lishuhao/sy_flutter_alipush)
+- [微信支付](https://github.com/lishuhao/sy_flutter_wechat)
+- [Flutter组件库](https://github.com/lishuhao/sy_flutter_widgets)
 - [七牛云存储SDK](https://github.com/lishuhao/sy_flutter_qiniu_storage)
