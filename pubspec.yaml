@@ -1,8 +1,8 @@
 name: sy_flutter_amap
-description: 高德地图flutter定位插件
-version: 0.0.1
-author:
-homepage:
+description: Amap location flutter plugin
+version: 0.1.1
+author: lishuhao <gg2366493058@gmail.com>
+homepage: https://github.com/lishuhao/sy_flutter_widgets
 
 environment:
   sdk: ">=2.0.0-dev.68.0 <3.0.0"

@@ -15,11 +15,6 @@
 在项目的info.plist 添加 NSLocationWhenInUseUsageDescription 及其描述
 
 
-```dart
-
-
-```
-
 ## 其它Flutter 插件
 - [支付宝](https://github.com/lishuhao/sy_flutter_alipay)
 - [微信支付](https://github.com/lishuhao/sy_flutter_wechat)
