@@ -1,3 +1,9 @@
+<p align="center">
+    <a href="https://pub.dartlang.org/packages/sy_flutter_amap">
+        <img src="https://img.shields.io/badge/pub-0.1.1-blue.svg?branch=master" alt="Build Status" />
+    </a>
+</p>
+
 # sy_flutter_amap
 
 高德定位flutter插件
